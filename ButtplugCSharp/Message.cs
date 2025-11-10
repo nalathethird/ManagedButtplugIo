@@ -13,50 +13,61 @@ namespace ButtplugManaged
         public static Message From(MessageBase messageBase)
         {
             // Only handle Client messages
-            Message message = new Message();
+            Message message = new();
 
-            if (messageBase is Ping PingCmd)
-                message.Ping = PingCmd;
-
-
-            if (messageBase is RequestServerInfo RequestServerInfoCmd)
-                message.RequestServerInfo = RequestServerInfoCmd;
-
-
-            if (messageBase is StartScanning StartScanningCmd)
-                message.StartScanning = StartScanningCmd;
-            if (messageBase is StopScanning StopScanningCmd)
-                message.StopScanning = StopScanningCmd;
-            if (messageBase is RequestDeviceList RequestDeviceListCmd)
-                message.RequestDeviceList = RequestDeviceListCmd;
-
-            if (messageBase is RawWriteCmd RawWriteCmd)
-                message.RawWriteCmd = RawWriteCmd;
-            if (messageBase is RawReadCmd RawReadCmd)
-                message.RawReadCmd = RawReadCmd;
-            if (messageBase is RawSubscribeCmd RawSubscribeCmd)
-                message.RawSubscribeCmd = RawSubscribeCmd;
-            if (messageBase is RawUnsubscribeCmd RawUnsubscribeCmd)
-                message.RawUnsubscribeCmd = RawUnsubscribeCmd;
-
-            if (messageBase is StopDeviceCmd StopDeviceCmd)
-                message.StopDeviceCmd = StopDeviceCmd;
-            if (messageBase is StopAllDevices StopAllDevicesCmd)
-                message.StopAllDevices = StopAllDevicesCmd;
-            if (messageBase is VibrateCmd VibrateCmd)
-                message.VibrateCmd = VibrateCmd;
-            if (messageBase is LinearCmd LinearCmd)
-                message.LinearCmd = LinearCmd;
-            if (messageBase is RotateCmd RotateCmd)
-                message.RotateCmd = RotateCmd;
-
-            if (messageBase is BatteryLevelCmd BatteryLevelCmd)
-                message.BatteryLevelCmd = BatteryLevelCmd;
-            if (messageBase is RSSILevelCmd RSSILevelCmd)
-                message.RSSILevelCmd = RSSILevelCmd;
+            switch (messageBase)
+            {
+                case Ping ping:
+                    message.Ping = ping;
+                    break;
+                case RequestServerInfo requestServerInfo:
+                    message.RequestServerInfo = requestServerInfo;
+                    break;
+                case StartScanning startScanning:
+                    message.StartScanning = startScanning;
+                    break;
+                case StopScanning stopScanning:
+                    message.StopScanning = stopScanning;
+                    break;
+                case RequestDeviceList requestDeviceList:
+                    message.RequestDeviceList = requestDeviceList;
+                    break;
+                case RawWriteCmd rawWriteCmd:
+                    message.RawWriteCmd = rawWriteCmd;
+                    break;
+                case RawReadCmd rawReadCmd:
+                    message.RawReadCmd = rawReadCmd;
+                    break;
+                case RawSubscribeCmd rawSubscribeCmd:
+                    message.RawSubscribeCmd = rawSubscribeCmd;
+                    break;
+                case RawUnsubscribeCmd rawUnsubscribeCmd:
+                    message.RawUnsubscribeCmd = rawUnsubscribeCmd;
+                    break;
+                case StopDeviceCmd stopDeviceCmd:
+                    message.StopDeviceCmd = stopDeviceCmd;
+                    break;
+                case StopAllDevices stopAllDevices:
+                    message.StopAllDevices = stopAllDevices;
+                    break;
+                case VibrateCmd vibrateCmd:
+                    message.VibrateCmd = vibrateCmd;
+                    break;
+                case LinearCmd linearCmd:
+                    message.LinearCmd = linearCmd;
+                    break;
+                case RotateCmd rotateCmd:
+                    message.RotateCmd = rotateCmd;
+                    break;
+                case BatteryLevelCmd batteryLevelCmd:
+                    message.BatteryLevelCmd = batteryLevelCmd;
+                    break;
+                case RSSILevelCmd rssiLevelCmd:
+                    message.RSSILevelCmd = rssiLevelCmd;
+                    break;
+            }
 
             return message;
-
         }
         //Status
         public Ok Ok { get; set; }

@@ -11,7 +11,7 @@
     <RepositoryType>git</RepositoryType>
     <Copyright>Copyright 2017-2021 © Nonpolynomial. All rights reserved.</Copyright>
     <PackageLicenseExpression>BSD-3-Clause</PackageLicenseExpression>
-    <Description>Buttplug Sex Toy Control Library for .Net. FFI layer on top of Buttplug Rust for .Net Access. Contains full system (Core, Client, Server, Device Comm Managers, etc...) for Windows. (.Net Framework 4.7+/.Net Standard 2.0)</Description>
+    <Description>Buttplug Sex Toy Control Library for .NET 9. FFI layer on top of Buttplug Rust for .NET Access. Contains full system (Core, Client, Server, Device Comm Managers, etc...) for Windows and cross-platform support.</Description>
     <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
 
@@ -20,7 +20,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <TargetFrameworks>net48</TargetFrameworks>
+    <TargetFramework>net9.0</TargetFramework>
     <PackageProjectUrl>https://buttplug.io</PackageProjectUrl>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Company>Nonpolynomial, LLC</Company>
@@ -60,8 +60,7 @@
   </ItemGroup>
   
   <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-    <PackageReference Include="WebSocketSharp" Version="1.0.3-rc11" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
   </ItemGroup>
 
 </Project>

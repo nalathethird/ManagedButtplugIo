@@ -4,3 +4,4 @@
 **/.vs/**
 **/nupkg-build/**
 packages/**
+*.md

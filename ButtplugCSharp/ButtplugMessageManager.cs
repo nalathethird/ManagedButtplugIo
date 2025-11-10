@@ -9,10 +9,10 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using WebSocketSharp;
 
 namespace ButtplugManaged
 {
@@ -21,14 +21,19 @@ namespace ButtplugManaged
         /// <summary>
         /// Stores messages waiting for reply from the server.
         /// </summary>
-        private readonly ConcurrentDictionary<uint, TaskCompletionSource<MessageBase>> _waitingMsgs = new ConcurrentDictionary<uint, TaskCompletionSource<MessageBase>>();
+        private readonly ConcurrentDictionary<uint, TaskCompletionSource<MessageBase>> _waitingMsgs = new();
 
         /// <summary>
         /// Holds count for message IDs, if needed.
         /// </summary>
         private int _counter;
-        private readonly WebSocket _webSocket;
+        private readonly ClientWebSocket _webSocket;
         private uint _pingTimeout;
+        private readonly Uri _serverUri;
+        private CancellationTokenSource _receiveCts;
+        private Task _receiveTask;
+        private CancellationTokenSource _pingCts;
+        private Task _pingTask;
 
         /// <summary>
         /// Gets the next available message ID. In most cases, setting the message ID is done automatically.
@@ -39,24 +44,28 @@ namespace ButtplugManaged
 
         public ButtplugMessageManager(ButtplugWebsocketConnectorOptions connectorOptions, ButtplugClient client)
         {
-            _webSocket = new WebSocket(connectorOptions.NetworkAddress.AbsoluteUri);
+            _webSocket = new ClientWebSocket();
+            _serverUri = connectorOptions.NetworkAddress;
             _client = client;
-            _webSocket.OnMessage += RecieveMessage;
-            _webSocket.OnClose += (sender, args) =>_client.OnServerDisconnect(sender, args);
-            _webSocket.OnError += (sender, args) =>_client.OnServerDisconnect(sender, args);
         }
 
         public async Task Connect()
         {
-            _webSocket.Connect();
+            _receiveCts = new CancellationTokenSource();
+            _pingCts = new CancellationTokenSource();
+
+            await _webSocket.ConnectAsync(_serverUri, CancellationToken.None);
+
+            // Start receiving messages
+            _receiveTask = Task.Run(() => ReceiveLoop(_receiveCts.Token));
+
             var result = await SendClientMessage(new RequestServerInfo() { ClientName = _client.Name, MessageVersion = 2 });
 
             if (result is ServerInfo serverInfo)
             {
                 Console.WriteLine(serverInfo.MaxPingTime);
                 _pingTimeout = serverInfo.MaxPingTime;
-                new Thread(Pings).Start();
-
+                _pingTask = Task.Run(() => PingLoop(_pingCts.Token));
 
                 var result2 = await SendClientMessage(new RequestDeviceList() { });
 
@@ -67,38 +76,54 @@ namespace ButtplugManaged
                         AddDevice(device);
                     }
                 }
-
             }
-
         }
 
-        private void Pings()
+        private async Task ReceiveLoop(CancellationToken cancellationToken)
         {
-            bool wspings = _pingTimeout == 0;
-            if (wspings) _pingTimeout = 1000 * 10 * 2;
-            while (_webSocket.ReadyState == WebSocketState.Open)
+            var buffer = new byte[8192];
+            var messageBuilder = new StringBuilder();
+
+            try
             {
-                if (wspings)
-                    _webSocket.Ping();
-                else
-                    SendClientMessage(new Ping());
-                Thread.Sleep((int)_pingTimeout / 2);
+                while (_webSocket.State == WebSocketState.Open && !cancellationToken.IsCancellationRequested)
+                {
+                    var result = await _webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), cancellationToken);
+
+                    if (result.MessageType == WebSocketMessageType.Close)
+                    {
+                        await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty, CancellationToken.None);
+                        _client.OnServerDisconnect(this, EventArgs.Empty);
+                        break;
+                    }
+
+                    if (result.MessageType == WebSocketMessageType.Text)
+                    {
+                        messageBuilder.Append(Encoding.UTF8.GetString(buffer, 0, result.Count));
+
+                        if (result.EndOfMessage)
+                        {
+                            var messageText = messageBuilder.ToString();
+                            messageBuilder.Clear();
+                            ProcessMessage(messageText);
+                        }
+                    }
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // Normal cancellation
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"WebSocket receive error: {ex.Message}");
+                _client.OnServerDisconnect(this, EventArgs.Empty);
             }
         }
 
-        public void Disconnect()
+        private void ProcessMessage(string messageText)
         {
-
-            _webSocket.Close();
-        }
-
-
-        private void RecieveMessage(object sender, MessageEventArgs e)
-        {
-            if (!e.IsText)
-                return;
-
-            List<Message> messages = JsonConvert.DeserializeObject<List<Message>>(e.Data);
+            List<Message> messages = JsonConvert.DeserializeObject<List<Message>>(messageText);
             foreach (var message in messages)
             {
                 foreach (var item in typeof(Message).GetProperties())
@@ -109,7 +134,46 @@ namespace ButtplugManaged
             }
         }
 
-        public void Shutdown()
+        private async Task PingLoop(CancellationToken cancellationToken)
+        {
+            bool wspings = _pingTimeout == 0;
+            if (wspings) _pingTimeout = 1000 * 10 * 2;
+
+            try
+            {
+                while (_webSocket.State == WebSocketState.Open && !cancellationToken.IsCancellationRequested)
+                {
+                    if (!wspings)
+                    {
+                        await SendClientMessage(new Ping());
+                    }
+                    await Task.Delay((int)_pingTimeout / 2, cancellationToken);
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // Normal cancellation
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Ping error: {ex.Message}");
+            }
+        }
+
+        public async Task Disconnect()
+        {
+            _pingCts?.Cancel();
+            _receiveCts?.Cancel();
+
+            if (_webSocket.State == WebSocketState.Open)
+            {
+                await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Client disconnecting", CancellationToken.None);
+            }
+
+            _webSocket.Dispose();
+        }
+
+        public async Task Shutdown()
         {
             // If we've somehow destructed while holding tasks, throw exceptions at all of them.
             foreach (var task in _waitingMsgs.Values)
@@ -117,10 +181,10 @@ namespace ButtplugManaged
                 task.TrySetException(new ButtplugConnectorException("Sorter has been destroyed with live tasks still in queue, most likely due to a disconnection."));
             }
 
-            _webSocket.Close();
+            await Disconnect();
         }
 
-        public Task<MessageBase> SendClientMessage(MessageBase aMsg)
+        public async Task<MessageBase> SendClientMessage(MessageBase aMsg)
         {
             var id = NextMsgId;
             // The client always increments the IDs on outgoing messages
@@ -128,13 +192,16 @@ namespace ButtplugManaged
 
             var promise = new TaskCompletionSource<MessageBase>();
             _waitingMsgs.TryAdd(id, promise);
+            
             string jsonString = JsonConvert.SerializeObject(new List<Message>() { Message.From(aMsg) }, Formatting.Indented, new JsonSerializerSettings
             {
                 NullValueHandling = NullValueHandling.Ignore
             });
-            _webSocket.Send(jsonString);
 
-            return promise.Task;
+            var bytes = Encoding.UTF8.GetBytes(jsonString);
+            await _webSocket.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, CancellationToken.None);
+
+            return await promise.Task;
         }
 
         public void CheckMessage(MessageBase aMsg)
@@ -166,7 +233,7 @@ namespace ButtplugManaged
                 }
 
                 if (aMsg is ScanningFinished)
-                    _client.OnScanningFinished(_client, new EventArgs()); ;
+                    _client.OnScanningFinished(_client, new EventArgs());
 
                 return;
             }

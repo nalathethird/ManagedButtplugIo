@@ -78,9 +78,11 @@ namespace ButtplugManaged
 
         public Task SendVibrateCmd(Dictionary<uint, double> aCmds)
         {
-            VibrateCmd vibrateMessage = new VibrateCmd();
-            vibrateMessage.DeviceIndex = Index;
-            vibrateMessage.Speeds = new List<VibrateSpeed>();
+            VibrateCmd vibrateMessage = new VibrateCmd
+            {
+                DeviceIndex = Index,
+                Speeds = []
+            };
             foreach (var command in aCmds)
             {
                 vibrateMessage.Speeds.Add(new VibrateSpeed() { Index = command.Key, Speed = command.Value });
@@ -114,9 +116,11 @@ namespace ButtplugManaged
 
         public Task SendRotateCmd(Dictionary<uint, (double, bool)> aCmds)
         {
-            RotateCmd rotateMessage = new RotateCmd();
-            rotateMessage.DeviceIndex = Index;
-            rotateMessage.Rotations = new List<Rotations>();
+            RotateCmd rotateMessage = new RotateCmd
+            {
+                DeviceIndex = Index,
+                Rotations = []
+            };
             foreach (var command in aCmds)
             {
                 rotateMessage.Rotations.Add(new Rotations() { Index = command.Key, Speed = command.Value.Item1, Clockwise = command.Value.Item2 });
@@ -150,9 +154,11 @@ namespace ButtplugManaged
 
         public Task SendLinearCmd(Dictionary<uint, (uint, double)> aCmds)
         {
-            LinearCmd linearMessage = new LinearCmd();
-            linearMessage.DeviceIndex = Index;
-            linearMessage.Vectors = new List<LinearVector>();
+            LinearCmd linearMessage = new LinearCmd
+            {
+                DeviceIndex = Index,
+                Vectors = []
+            };
             foreach (var command in aCmds)
             {
                 linearMessage.Vectors.Add(new LinearVector() { Index = command.Key, Duration = command.Value.Item1, Position = command.Value.Item2 });

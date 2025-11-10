@@ -96,11 +96,11 @@ namespace ButtplugManaged
         public ButtplugClient(string aClientName)
         {
             Name = aClientName;
-            _devices = new ConcurrentDictionary<uint, ButtplugClientDevice>();
+            _devices = [];
         }
 
 
-        public async Task ConnectAsync(ButtplugEmbeddedConnectorOptions aConnector)
+        public Task ConnectAsync(ButtplugEmbeddedConnectorOptions aConnector)
         {
             throw new NotImplementedException("This feature doesnt exist in the managed Client");
         }
@@ -116,8 +116,7 @@ namespace ButtplugManaged
 
         public async Task DisconnectAsync()
         {
-            _messageManager.Disconnect();
-
+            await _messageManager.Disconnect();
 
             _devices.Clear();
             Connected = false;
