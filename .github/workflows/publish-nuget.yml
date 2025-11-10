@@ -1,0 +1,48 @@
+name: Publish NuGet Package
+
+on:
+  push:
+    tags:
+      - 'v*' # Triggers on version tags like v2.0.6
+  workflow_dispatch: # Allows manual trigger
+
+jobs:
+  build-and-publish:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+        
+    - name: Restore dependencies
+      run: dotnet restore ButtplugCSharp/ManagedButtplugIo.csproj
+      
+    - name: Build
+      run: dotnet build ButtplugCSharp/ManagedButtplugIo.csproj --configuration Release --no-restore
+      
+    - name: Pack NuGet package
+      run: dotnet pack ButtplugCSharp/ManagedButtplugIo.csproj --configuration Release --no-build --output ./nupkg
+      
+    - name: Publish to NuGet.org
+      run: dotnet nuget push ./nupkg/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+      env:
+        NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        
+    - name: Upload NuGet package as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: nuget-package
+        path: ./nupkg/*.nupkg
+        
+    - name: Upload DLLs as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: compiled-dlls
+        path: |
+          ButtplugCSharp/bin/Release/net9.0/*.dll
+          ButtplugCSharp/bin/Release/net9.0/*.xml

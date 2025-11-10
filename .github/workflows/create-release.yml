@@ -1,0 +1,56 @@
+name: Create Release with DLLs
+
+on:
+  push:
+    tags:
+      - 'v*' # Triggers on version tags like v2.0.6
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number (e.g., 2.0.6)'
+        required: true
+
+jobs:
+  create-release:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+        
+    - name: Restore dependencies
+      run: dotnet restore ButtplugCSharp/ManagedButtplugIo.csproj
+      
+    - name: Build Release
+      run: dotnet build ButtplugCSharp/ManagedButtplugIo.csproj --configuration Release --no-restore
+      
+    - name: Pack NuGet package
+      run: dotnet pack ButtplugCSharp/ManagedButtplugIo.csproj --configuration Release --no-build --output ./release-assets
+      
+    - name: Prepare Release Assets
+      run: |
+        mkdir release-package
+        Copy-Item "ButtplugCSharp/bin/Release/net9.0/ButtplugManaged.dll" -Destination "release-package/"
+        Copy-Item "ButtplugCSharp/bin/Release/net9.0/ButtplugManaged.xml" -Destination "release-package/" -ErrorAction SilentlyContinue
+        Copy-Item "ButtplugCSharp/bin/Release/net9.0/Newtonsoft.Json.dll" -Destination "release-package/"
+        Compress-Archive -Path "release-package/*" -DestinationPath "ButtplugManaged-${{ github.ref_name }}.zip"
+      shell: pwsh
+      
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          ButtplugManaged-${{ github.ref_name }}.zip
+          release-assets/*.nupkg
+        generate_release_notes: true
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
