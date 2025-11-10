@@ -40,7 +40,16 @@ jobs:
         mkdir release-package
         Copy-Item "ButtplugCSharp/bin/Release/net9.0/ButtplugManaged.dll" -Destination "release-package/"
         Copy-Item "ButtplugCSharp/bin/Release/net9.0/ButtplugManaged.xml" -Destination "release-package/" -ErrorAction SilentlyContinue
-        Copy-Item "ButtplugCSharp/bin/Release/net9.0/Newtonsoft.Json.dll" -Destination "release-package/"
+        
+        # List all files in the output directory for debugging
+        Write-Host "Files in output directory:"
+        Get-ChildItem "ButtplugCSharp/bin/Release/net9.0/" | Format-Table Name
+        
+        # Copy any additional DLLs if they exist
+        Get-ChildItem "ButtplugCSharp/bin/Release/net9.0/*.dll" -Exclude "ButtplugManaged.dll" -ErrorAction SilentlyContinue | ForEach-Object {
+            Copy-Item $_.FullName -Destination "release-package/" -ErrorAction SilentlyContinue
+        }
+        
         Compress-Archive -Path "release-package/*" -DestinationPath "ButtplugManaged-${{ github.ref_name }}.zip"
       shell: pwsh
       
@@ -53,5 +62,34 @@ jobs:
         generate_release_notes: true
         draft: false
         prerelease: false
+        body: |
+          ## ButtplugManaged ${{ github.ref_name }}
+          
+          ### .NET 9 Release
+          
+          This release includes:
+          - ? Native .NET 9 WebSocket support (no WebSocketSharp dependency)
+          - ? Modern C# 12 features
+          - ? Comprehensive XML documentation
+          - ? Improved async/await patterns
+          - ? Better performance and security
+          
+          ### Installation
+          
+          **Via NuGet:**
+          ```bash
+          dotnet add package ButtplugManaged
+          ```
+          
+          **Via DLL:**
+          Download `ButtplugManaged-${{ github.ref_name }}.zip` and reference the DLL in your project.
+          
+          ### Dependencies
+          - .NET 9.0 runtime
+          - Newtonsoft.Json 13.0.4 (install via NuGet)
+          
+          ### Documentation
+          - [README](https://github.com/nalathethird/ManagedButtplugIo/blob/main/README.md)
+          - [Deployment Guide](https://github.com/nalathethird/ManagedButtplugIo/blob/main/DEPLOYMENT_GUIDE.md)
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
