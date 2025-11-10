@@ -16,6 +16,9 @@ using System.Threading.Tasks;
 
 namespace ButtplugManaged
 {
+    /// <summary>
+    /// Manages WebSocket connection and message routing between client and server.
+    /// </summary>
     public class ButtplugMessageManager
     {
         /// <summary>
@@ -42,6 +45,11 @@ namespace ButtplugManaged
 
         private readonly ButtplugClient _client;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ButtplugMessageManager"/> class.
+        /// </summary>
+        /// <param name="connectorOptions">WebSocket connection options.</param>
+        /// <param name="client">The client instance.</param>
         public ButtplugMessageManager(ButtplugWebsocketConnectorOptions connectorOptions, ButtplugClient client)
         {
             _webSocket = new ClientWebSocket();
@@ -49,6 +57,10 @@ namespace ButtplugManaged
             _client = client;
         }
 
+        /// <summary>
+        /// Connects to the Buttplug server and performs handshake.
+        /// </summary>
+        /// <returns>A task representing the asynchronous operation.</returns>
         public async Task Connect()
         {
             _receiveCts = new CancellationTokenSource();
@@ -160,6 +172,10 @@ namespace ButtplugManaged
             }
         }
 
+        /// <summary>
+        /// Disconnects from the Buttplug server.
+        /// </summary>
+        /// <returns>A task representing the asynchronous operation.</returns>
         public async Task Disconnect()
         {
             _pingCts?.Cancel();
@@ -173,6 +189,10 @@ namespace ButtplugManaged
             _webSocket.Dispose();
         }
 
+        /// <summary>
+        /// Shuts down the message manager and cancels all pending operations.
+        /// </summary>
+        /// <returns>A task representing the asynchronous operation.</returns>
         public async Task Shutdown()
         {
             // If we've somehow destructed while holding tasks, throw exceptions at all of them.
@@ -184,6 +204,11 @@ namespace ButtplugManaged
             await Disconnect();
         }
 
+        /// <summary>
+        /// Sends a message to the server and waits for a response.
+        /// </summary>
+        /// <param name="aMsg">The message to send.</param>
+        /// <returns>The server's response message.</returns>
         public async Task<MessageBase> SendClientMessage(MessageBase aMsg)
         {
             var id = NextMsgId;
@@ -204,6 +229,10 @@ namespace ButtplugManaged
             return await promise.Task;
         }
 
+        /// <summary>
+        /// Processes an incoming message from the server.
+        /// </summary>
+        /// <param name="aMsg">The message to process.</param>
         public void CheckMessage(MessageBase aMsg)
         {
             // We'll never match a system message, those are server -> client only.

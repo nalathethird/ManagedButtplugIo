@@ -2,6 +2,9 @@
 
 namespace ButtplugManaged
 {
+    /// <summary>
+    /// Exception thrown when ping/pong keep-alive timeout occurs.
+    /// </summary>
     public class ButtplugPingException : ButtplugException
     {
         /// <inheritdoc />

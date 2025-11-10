@@ -2,6 +2,9 @@
 
 namespace ButtplugManaged
 {
+    /// <summary>
+    /// Exception thrown when handshake with the server fails.
+    /// </summary>
     public class ButtplugHandshakeException : ButtplugException
     {
         /// <inheritdoc />

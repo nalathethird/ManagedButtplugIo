@@ -2,6 +2,9 @@
 
 namespace ButtplugManaged
 {
+    /// <summary>
+    /// Exception thrown when device communication or operation fails.
+    /// </summary>
     public class ButtplugDeviceException : ButtplugException
     {
         /// <inheritdoc />

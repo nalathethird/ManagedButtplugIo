@@ -2,6 +2,9 @@
 
 namespace ButtplugManaged
 {
+    /// <summary>
+    /// Exception thrown when connection to the server fails.
+    /// </summary>
     public class ButtplugConnectorException : ButtplugException
     {
         /// <inheritdoc />

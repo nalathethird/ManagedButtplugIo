@@ -2,6 +2,9 @@
 
 namespace ButtplugManaged
 {
+    /// <summary>
+    /// Base exception class for all Buttplug-related exceptions.
+    /// </summary>
     public class ButtplugException : Exception
     {
         /// <inheritdoc />
@@ -26,12 +29,16 @@ namespace ButtplugManaged
         /// Creates a ButtplugException.
         /// </summary>
         /// <param name="aMessage">Exception message.</param>
-        /// <param name="aClass">Exception class, based on Buttplug Error Message Classes. (https://buttplug-spec.docs.buttplug.io/status.html#error).</param>
         /// <param name="aInner">Inner exception.</param>
         public ButtplugException(string aMessage, Exception aInner) : base(aMessage, aInner)
         {
         }
 
+        /// <summary>
+        /// Creates a specific ButtplugException subclass from an Error message.
+        /// </summary>
+        /// <param name="aMsg">The error message to convert.</param>
+        /// <returns>A ButtplugException subclass matching the error type.</returns>
         public static ButtplugException FromError(Error aMsg)
         {
             var err_str = aMsg.ErrorMessage;

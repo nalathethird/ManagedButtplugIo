@@ -2,6 +2,9 @@
 
 namespace ButtplugManaged
 {
+    /// <summary>
+    /// Exception thrown when an unknown or unexpected error occurs.
+    /// </summary>
     public class ButtplugUnknownException : ButtplugException
     {
         /// <inheritdoc />

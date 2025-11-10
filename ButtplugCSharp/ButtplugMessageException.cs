@@ -2,6 +2,9 @@
 
 namespace ButtplugManaged
 {
+    /// <summary>
+    /// Exception thrown when message parsing or validation fails.
+    /// </summary>
     public class ButtplugMessageException : ButtplugException
     {
         /// <inheritdoc />
